@@ -9,14 +9,14 @@ import kotlinx.serialization.json.Json
 @Serializable
 sealed interface ExchangeEvent
 
-suspend fun ByteReadChannel.readServerEvent(): ExchangeEvent {
+suspend fun ByteReadChannel.readExchangeEvent(): ExchangeEvent {
     val len = readInt()
     val text = readPacket(len).readText()
     val message = Json.decodeFromString<ExchangeEvent>(text)
     return message
 }
 
-suspend fun ByteWriteChannel.writeServerEvent(event: ExchangeEvent) {
+suspend fun ByteWriteChannel.writeExchangeEvent(event: ExchangeEvent) {
     val json = Json.encodeToString(event)
     writeInt(json.length)
     writeStringUtf8(json)
@@ -25,8 +25,9 @@ suspend fun ByteWriteChannel.writeServerEvent(event: ExchangeEvent) {
 @Serializable
 @SerialName("authenticate")
 data class AuthenticateEvent(
-    val required: Boolean?,
-    val token: String?,
+    val required: Boolean? = null,
+    val token: String? = null,
+    val success: Boolean? = null,
 ) : ExchangeEvent
 
 @Serializable

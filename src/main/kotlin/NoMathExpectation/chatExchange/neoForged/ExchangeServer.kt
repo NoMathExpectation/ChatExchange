@@ -9,7 +9,6 @@ import kotlinx.coroutines.sync.withLock
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import org.apache.logging.log4j.LogManager
-import java.awt.SystemColor.text
 
 class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineScope {
     private val scope = CoroutineScope(Dispatchers.IO) + CoroutineName("ChatExchangeServer")
@@ -46,13 +45,15 @@ class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineSc
                 val receiveChannel = socket.openReadChannel()
 
                 if (token.isNotBlank()) {
-                    sendChannel.writeServerEvent(AuthenticateEvent(true, null))
-                    val actualToken = (receiveChannel.readServerEvent() as? AuthenticateEvent)?.token
+                    sendChannel.writeExchangeEvent(AuthenticateEvent(required = true))
+                    val actualToken = (receiveChannel.readExchangeEvent() as? AuthenticateEvent)?.token
                     if (token != actualToken) {
+                        sendChannel.writeExchangeEvent(AuthenticateEvent(success = false))
                         return@runCatching
                     }
+                    sendChannel.writeExchangeEvent(AuthenticateEvent(success = true))
                 } else {
-                    sendChannel.writeServerEvent(AuthenticateEvent(false, null))
+                    sendChannel.writeExchangeEvent(AuthenticateEvent(required = false))
                 }
 
                 channelMutex.withLock {
@@ -73,7 +74,7 @@ class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineSc
     private suspend fun receiveRoutine(channel: ByteReadChannel) {
         while (isActive) {
             kotlin.runCatching {
-                val event = channel.readServerEvent()
+                val event = channel.readExchangeEvent()
                 logger.info("Received event: $event")
                 if (event !is MessageEvent) {
                     return@runCatching
@@ -100,7 +101,7 @@ class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineSc
         channelMutex.withLock {
             sendChannels.forEach {
                 kotlin.runCatching {
-                    it.writeServerEvent(event)
+                    it.writeExchangeEvent(event)
                 }.onFailure {
                     logger.error("Failed to send message to a client.")
                     logger.error(it)
