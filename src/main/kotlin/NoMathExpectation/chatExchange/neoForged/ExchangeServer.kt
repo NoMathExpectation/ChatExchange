@@ -6,11 +6,10 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import org.apache.logging.log4j.LogManager
+import java.awt.SystemColor.text
 
 class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineScope {
     private val scope = CoroutineScope(Dispatchers.IO) + CoroutineName("ChatExchangeServer")
@@ -47,14 +46,13 @@ class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineSc
                 val receiveChannel = socket.openReadChannel()
 
                 if (token.isNotBlank()) {
-                    sendChannel.writeBoolean(true)
-                    val len = receiveChannel.readInt()
-                    val text = receiveChannel.readPacket(len).readText()
-                    if (text != token) {
+                    sendChannel.writeServerEvent(AuthenticateEvent(true, null))
+                    val actualToken = (receiveChannel.readServerEvent() as? AuthenticateEvent)?.token
+                    if (token != actualToken) {
                         return@runCatching
                     }
                 } else {
-                    sendChannel.writeBoolean(false)
+                    sendChannel.writeServerEvent(AuthenticateEvent(false, null))
                 }
 
                 channelMutex.withLock {
@@ -75,29 +73,34 @@ class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineSc
     private suspend fun receiveRoutine(channel: ByteReadChannel) {
         while (isActive) {
             kotlin.runCatching {
-                val len = channel.readInt()
-                val text = channel.readPacket(len).readText()
-                val message = Json.decodeFromString<Message>(text)
+                val event = channel.readServerEvent()
+                logger.info("Received event: $event")
+                if (event !is MessageEvent) {
+                    return@runCatching
+                }
 
-                val formatted = "<${message.from}> ${message.content}"
+                val formatted = "<${event.from}> ${event.content}"
                 logger.info(formatted)
                 minecraftServer.playerList.players.forEach {
                     it.sendSystemMessage(Component.literal(formatted))
                 }
             }.onFailure {
+                if (channel.isClosedForRead) {
+                    return
+                }
+
                 logger.error("Failed to receive message from a client.")
                 logger.error(it)
             }
         }
     }
 
-    private suspend fun sendMessage(message: Message) {
-        val json = Json.encodeToString(message)
+    private suspend fun sendEvent(event: ExchangeEvent) {
+        logger.info("Sending event: $event")
         channelMutex.withLock {
             sendChannels.forEach {
                 kotlin.runCatching {
-                    it.writeInt(json.length)
-                    it.writeStringUtf8(json)
+                    it.writeServerEvent(event)
                 }.onFailure {
                     logger.error("Failed to send message to a client.")
                     logger.error(it)
@@ -133,10 +136,10 @@ class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineSc
             instance = null
         }
 
-        fun sendMessage(message: Message) {
+        fun sendEvent(event: ExchangeEvent) {
             val instance = instance ?: return
             instance.launch {
-                instance.sendMessage(message)
+                instance.sendEvent(event)
             }
         }
     }
