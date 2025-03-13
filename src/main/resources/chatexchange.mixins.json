@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "NoMathExpectation.chatExchange.neoForged.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "chatexchange.refmap.json",
+  "mixins": [
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
