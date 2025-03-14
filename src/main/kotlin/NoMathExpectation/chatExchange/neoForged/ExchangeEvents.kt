@@ -50,3 +50,17 @@ data class PlayerJoinEvent(
 data class PlayerLeaveEvent(
     val name: String,
 ) : ExchangeEvent
+
+@Serializable
+@SerialName("player_die")
+data class PlayerDieEvent(
+    val name: String,
+    val text: String,
+) : ExchangeEvent
+
+@Serializable
+@SerialName("player_advancement")
+data class PlayerAdvancementEvent(
+    val name: String,
+    val advancement: String,
+) : ExchangeEvent
