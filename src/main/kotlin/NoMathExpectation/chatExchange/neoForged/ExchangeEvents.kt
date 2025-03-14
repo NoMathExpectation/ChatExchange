@@ -1,6 +1,7 @@
 package NoMathExpectation.chatExchange.neoForged
 
 import io.ktor.utils.io.*
+import io.ktor.utils.io.core.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -11,15 +12,16 @@ sealed interface ExchangeEvent
 
 suspend fun ByteReadChannel.readExchangeEvent(): ExchangeEvent {
     val len = readInt()
-    val text = readPacket(len).readText()
+    val text = readPacket(len).readBytes().decodeToString()
     val message = Json.decodeFromString<ExchangeEvent>(text)
     return message
 }
 
 suspend fun ByteWriteChannel.writeExchangeEvent(event: ExchangeEvent) {
     val json = Json.encodeToString(event)
-    writeInt(json.length)
-    writeStringUtf8(json)
+    val bytes = json.encodeToByteArray()
+    writeInt(bytes.size)
+    writeFully(bytes)
 }
 
 @Serializable
