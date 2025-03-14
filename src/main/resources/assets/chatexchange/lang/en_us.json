@@ -1,5 +1,6 @@
 {
   "itemGroup.chatexchange": "Chat Exchange",
   "modid.config.host": "Host",
-  "modid.config.port": "Port"
+  "modid.config.port": "Port",
+  "modid.config.token": "Token"
 }
