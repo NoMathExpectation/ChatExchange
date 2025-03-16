@@ -6,11 +6,15 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import net.minecraft.locale.Language
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import org.apache.logging.log4j.LogManager
 
-class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineScope {
+class ExchangeServer(
+    private val minecraftServer: MinecraftServer,
+    private val language: Language,
+) : CoroutineScope {
     private val scope = CoroutineScope(Dispatchers.IO) + CoroutineName("ChatExchangeServer")
     override val coroutineContext get() = scope.coroutineContext
 
@@ -89,26 +93,25 @@ class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineSc
                 if (channel.isClosedForRead) {
                     return
                 }
-
-                logger.error("Failed to receive message from a client.")
-                logger.error(it)
+                logger.error("Failed to receive message from a client.", it)
             }
         }
     }
 
-    private suspend fun sendEvent(event: ExchangeEvent) {
+    suspend fun sendEvent(event: ExchangeEvent) {
         logger.info("Sending event: $event")
         channelMutex.withLock {
             sendChannels.forEach {
                 kotlin.runCatching {
                     it.writeExchangeEvent(event)
                 }.onFailure {
-                    logger.error("Failed to send message to a client.")
-                    logger.error(it)
+                    logger.error("Failed to send message to a client.", it)
                 }
             }
         }
     }
+
+    fun componentToString(component: Component) = component.getStringWithLanguage(language)
 
     fun launch() {
         if (launched) {
@@ -127,7 +130,15 @@ class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineSc
 
         fun startNewInstance(server: MinecraftServer) {
             instance?.cancel()
-            instance = ExchangeServer(server)
+
+            val languageName = ChatExchangeConfig.language.get()
+            val language = if (languageName.isNotBlank()) {
+                languageOfOrDefault(languageName, server)
+            } else {
+                Language.getInstance()
+            }
+
+            instance = ExchangeServer(server, language)
             instance?.launch()
         }
 
@@ -143,5 +154,7 @@ class ExchangeServer(private val minecraftServer: MinecraftServer) : CoroutineSc
                 instance.sendEvent(event)
             }
         }
+
+        fun componentToString(component: Component): String = instance?.componentToString(component) ?: component.string
     }
 }

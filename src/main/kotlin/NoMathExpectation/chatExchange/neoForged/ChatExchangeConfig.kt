@@ -29,6 +29,10 @@ object ChatExchangeConfig {
             .translation("modid.config.token")
             .worldRestart()
             .define("token", "")
+    val language: ModConfigSpec.ConfigValue<String> = builder.comment("The language the exchange server messages will be.", "Leave blank to use the language the game is using.")
+        .translation("modid.config.language")
+        .worldRestart()
+        .define("language", "")
 
     val spec = builder.build()
 

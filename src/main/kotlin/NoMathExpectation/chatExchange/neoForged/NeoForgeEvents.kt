@@ -53,9 +53,10 @@ object NeoForgeEvents {
         val player = event.entity as? Player ?: return
         val cause = event.source
 
-        val text = cause.getLocalizedDeathMessage(player).string
+        val playerName = ExchangeServer.componentToString(player.name)
+        val text = ExchangeServer.componentToString(cause.getLocalizedDeathMessage(player))
         ExchangeServer.sendEvent(
-            PlayerDieEvent(player.name.string, text)
+            PlayerDieEvent(playerName, text)
         )
     }
 
@@ -67,9 +68,11 @@ object NeoForgeEvents {
             return
         }
 
-        val advancementName = advancement.display.getOrNull()?.title?.string ?: return
+        val advancementName =
+            advancement.display.getOrNull()?.title?.let { ExchangeServer.componentToString(it) } ?: return
+        val playerName = ExchangeServer.componentToString(player.name)
         ExchangeServer.sendEvent(
-            PlayerAdvancementEvent(player.name.string, advancementName)
+            PlayerAdvancementEvent(playerName, advancementName)
         )
     }
 }
