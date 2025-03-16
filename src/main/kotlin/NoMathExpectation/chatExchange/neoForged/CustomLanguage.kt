@@ -50,16 +50,19 @@ fun languageOf(lang: String, server: MinecraftServer): Language {
     val textMap = mutableMapOf<String, String>()
     val componentMap = mutableMapOf<String, Component>()
 
-    CustomLanguage::class.java.getResourceAsStream("/assets/chatexchange/mclang/$lang.json")?.use {
-        Language.loadFromJson(it, textMap::put, componentMap::put)
+    fun loadFrom(path: String) {
+        CustomLanguage::class.java.getResourceAsStream(path)?.use {
+            Language.loadFromJson(it, textMap::put, componentMap::put)
+        } ?: logger.warn("Unable to load language file $path")
     }
 
-    CustomLanguage::class.java.getResourceAsStream("/assets/chatexchange/neolang/$lang.json")?.use {
-        Language.loadFromJson(it, textMap::put, componentMap::put)
-    }
+    loadFrom("/assets/chatexchange/mclang/$lang.json") // vanilla
+    loadFrom("/assets/chatexchange/fmllang/$lang.json") // fml
+    loadFrom("/assets/chatexchange/neolang/$lang.json") // neoforge
 
-    textMap += I18nManager.loadTranslations(lang)
+    textMap += I18nManager.loadTranslations(lang) // i18n
 
+    // mods
     val langFile = String.format(Locale.ROOT, "lang/%s.json", lang)
     val resourceManager = server.serverResources.resourceManager
     val clientResources = MultiPackResourceManager(PackType.CLIENT_RESOURCES, resourceManager.listPacks().toList())
@@ -77,7 +80,7 @@ fun languageOf(lang: String, server: MinecraftServer): Language {
         }
         1
     }.sum()
-    logger.debug("Loaded {} language files for {}", loaded, lang)
+    logger.debug("Loaded {} mod language files for {}", loaded, lang)
 
     return CustomLanguage(textMap, componentMap)
 }
