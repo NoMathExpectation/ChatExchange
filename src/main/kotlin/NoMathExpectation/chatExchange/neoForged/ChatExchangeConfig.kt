@@ -34,6 +34,32 @@ object ChatExchangeConfig {
         .worldRestart()
         .define("language", "")
 
+    val ignoreBotRegex: ModConfigSpec.ConfigValue<String> = builder.comment("The regex to match and ignore the bot players.", "Leave blank to disable.")
+        .translation("modid.config.ignoreBotRegex")
+        .define("ignoreBotRegex", "") {
+            kotlin.runCatching {
+                val str = it as String
+                if (str.isBlank()) {
+                    return@runCatching true
+                }
+
+                it.toRegex()
+                true
+            }.getOrDefault(false)
+        }
+    val chat: ModConfigSpec.BooleanValue = builder.comment("Whether to broadcast player chatting.", "Players can also broadcast their message by prefixing @broadcast.")
+        .translation("modid.config.chat")
+        .define("chat", true)
+    val joinLeave: ModConfigSpec.BooleanValue = builder.comment("Whether to broadcast player joining and leaving.")
+        .translation("modid.config.joinLeave")
+        .define("joinLeave", true)
+    val death: ModConfigSpec.BooleanValue = builder.comment("Whether to broadcast player deaths.")
+        .translation("modid.config.death")
+        .define("death", true)
+    val advancement: ModConfigSpec.BooleanValue = builder.comment("Whether to broadcast player advancements.")
+        .translation("modid.config.advancement")
+        .define("advancement", true)
+
     val spec = builder.build()
 
     private var registered = false
@@ -53,5 +79,15 @@ object ChatExchangeConfig {
 
     @SubscribeEvent
     fun onConfig(event: ModConfigEvent) {
+    }
+
+    fun checkIgnoreBot(name: String): Boolean {
+        val regexStr = ignoreBotRegex.get()
+        if (regexStr.isBlank()) {
+            return false
+        }
+
+        val regex = regexStr.toRegex()
+        return regex.matches(name)
     }
 }
