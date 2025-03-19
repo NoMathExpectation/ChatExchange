@@ -10,6 +10,7 @@ import net.minecraft.locale.Language
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import org.apache.logging.log4j.LogManager
+import kotlin.time.Duration.Companion.seconds
 
 class ExchangeServer(
     private val minecraftServer: MinecraftServer,
@@ -21,18 +22,28 @@ class ExchangeServer(
     private var launched = false
 
     private suspend fun serverRoutine() {
-        val host = ChatExchangeConfig.host.get()
-        val port = ChatExchangeConfig.port.get()
+        while (isActive) {
+            kotlin.runCatching {
+                val host = ChatExchangeConfig.host.get()
+                val port = ChatExchangeConfig.port.get()
 
-        logger.info("Starting exchange server on $host:$port...")
-        val serverSocket = aSocket(manager).tcp().bind(host, port)
-        serverSocket.use {
-            while (isActive) {
-                val socket = serverSocket.accept()
-                logger.info("New connection from ${socket.remoteAddress}")
-                scope.launch {
-                    handleRoutine(socket)
+                logger.info("Starting exchange server on $host:$port...")
+                val serverSocket = aSocket(manager).tcp().bind(host, port)
+                serverSocket.use {
+                    while (isActive) {
+                        val socket = serverSocket.accept()
+                        logger.info("New connection from ${socket.remoteAddress}")
+                        scope.launch {
+                            handleRoutine(socket)
+                        }
+                    }
                 }
+            }.onFailure {
+                if (!isActive) {
+                    return
+                }
+                logger.error("Server crashed! Will try to restart in 30 seconds.", it)
+                delay(30.seconds)
             }
         }
     }
@@ -44,34 +55,36 @@ class ExchangeServer(
 
     private suspend fun handleRoutine(socket: Socket) {
         socket.use {
-            val sendChannel = socket.openWriteChannel(autoFlush = true)
             kotlin.runCatching {
-                val receiveChannel = socket.openReadChannel()
+                val sendChannel = socket.openWriteChannel(autoFlush = true)
+                kotlin.runCatching inner@{
+                    val receiveChannel = socket.openReadChannel()
 
-                if (token.isNotBlank()) {
-                    sendChannel.writeExchangeEvent(AuthenticateEvent(required = true))
-                    val actualToken = (receiveChannel.readExchangeEvent() as? AuthenticateEvent)?.token
-                    if (token != actualToken) {
-                        sendChannel.writeExchangeEvent(AuthenticateEvent(success = false))
-                        return@runCatching
+                    if (token.isNotBlank()) {
+                        sendChannel.writeExchangeEvent(AuthenticateEvent(required = true))
+                        val actualToken = (receiveChannel.readExchangeEvent() as? AuthenticateEvent)?.token
+                        if (token != actualToken) {
+                            sendChannel.writeExchangeEvent(AuthenticateEvent(success = false))
+                            return@inner
+                        }
+                        sendChannel.writeExchangeEvent(AuthenticateEvent(success = true))
+                    } else {
+                        sendChannel.writeExchangeEvent(AuthenticateEvent(required = false))
                     }
-                    sendChannel.writeExchangeEvent(AuthenticateEvent(success = true))
-                } else {
-                    sendChannel.writeExchangeEvent(AuthenticateEvent(required = false))
-                }
 
-                channelMutex.withLock {
-                    sendChannels += sendChannel
-                }
+                    channelMutex.withLock {
+                        sendChannels += sendChannel
+                    }
 
-                receiveRoutine(receiveChannel)
+                    receiveRoutine(receiveChannel)
+                }
+                withContext(NonCancellable) {
+                    channelMutex.withLock {
+                        sendChannels -= sendChannel
+                    }
+                }
             }.onFailure {
                 logger.info("Exception during handling connection.", it)
-            }
-            withContext(NonCancellable) {
-                channelMutex.withLock {
-                    sendChannels -= sendChannel
-                }
             }
         }
         logger.info("A connection closed.")
