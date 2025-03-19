@@ -144,6 +144,8 @@ dependencies {
     "additionalRuntimeClasspath"("org.jetbrains.kotlinx:kotlinx-serialization-json")
 
     // ktor
+    externalImplementation("io.ktor:ktor-io", "[2.0, 4.0)", "2.3.13")
+    externalImplementation("io.ktor:ktor-utils", "[2.0, 4.0)", "2.3.13")
     externalImplementation("io.ktor:ktor-network", "[2.0, 4.0)", "2.3.13")
 
     // Example mod dependency with JEI
