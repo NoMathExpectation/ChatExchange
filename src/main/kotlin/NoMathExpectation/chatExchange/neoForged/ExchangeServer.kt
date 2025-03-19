@@ -65,6 +65,8 @@ class ExchangeServer(
                 }
 
                 receiveRoutine(receiveChannel)
+            }.onFailure {
+                logger.info("Exception during handling connection.", it)
             }
             withContext(NonCancellable) {
                 channelMutex.withLock {
