@@ -8,5 +8,10 @@
   "modid.config.chat": "Enable Chatting",
   "modid.config.joinLeave": "Enable Join/Leave",
   "modid.config.death": "Enable Death",
-  "modid.config.advancement": "Enable Advancement"
+  "modid.config.advancement": "Enable Advancement",
+  "modid.command.chatexchange.description": "§3§lChatExchange Help§r\nIf the server has enabled broadcasting chat messages, your chat messages will be broadcast to an external port by default.\nYou can use /chatexchange broadcastme to control whether your chat messages will be broadcast.\nAlso, you can broadcast your messages by prefixing @broadcast/@bc.",
+  "modid.command.chatexchange.broadcastme.on": "Your chat messages will now be broadcast.",
+  "modid.command.chatexchange.broadcastme.off": "Your chat messages will not be broadcast.",
+  "modid.command.chatexchange.broadcastme.ison": "Your chat messages are currently being broadcast.",
+  "modid.command.chatexchange.broadcastme.isoff": "Your chat messages are currently not being broadcast."
 }

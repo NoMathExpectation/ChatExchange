@@ -1,7 +1,6 @@
 package NoMathExpectation.chatExchange.neoForged
 
 import com.mojang.brigadier.arguments.BoolArgumentType
-import net.minecraft.ChatFormatting
 import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.contents.PlainTextContents
@@ -36,7 +35,10 @@ object NeoForgeEvents {
         val data = event.player.server.chatExchangeData
         var message = event.message
         val string = ExchangeServer.componentToString(message)
-        if ((!ChatExchangeConfig.chat.get() || data.isIgnoredPlayer(event.player.uuid)) && !(string.startsWith("@广播") || string.startsWith("@broadcast") || string.startsWith("@bc"))) {
+        if ((!ChatExchangeConfig.chat.get() || data.isIgnoredPlayer(event.player.uuid)) && !(string.startsWith("@广播") || string.startsWith(
+                "@broadcast"
+            ) || string.startsWith("@bc"))
+        ) {
             return
         }
 
@@ -162,10 +164,10 @@ object NeoForgeEvents {
                         val toggle = BoolArgumentType.getBool(context, "toggle")
                         if (toggle) {
                             data.removeIgnoredPlayer(player.uuid)
-                            player.sendSystemMessage(Component.literal("你的消息现在会被广播了。"))
+                            player.sendSystemMessage("modid.command.chatexchange.broadcastme.on".toExchangeServerTranslatedLiteral())
                         } else {
                             data.addIgnoredPlayer(player.uuid)
-                            player.sendSystemMessage(Component.literal("你的消息现在不会被广播了。"))
+                            player.sendSystemMessage("modid.command.chatexchange.broadcastme.off".toExchangeServerTranslatedLiteral())
                         }
 
                         1
@@ -174,9 +176,9 @@ object NeoForgeEvents {
                     val player = context.source.player ?: return@executes 0
                     val data = player.server.chatExchangeData
                     if (data.isIgnoredPlayer(player.uuid)) {
-                        player.sendSystemMessage(Component.literal("你的消息当前不会被广播。"))
+                        player.sendSystemMessage("modid.command.chatexchange.broadcastme.isoff".toExchangeServerTranslatedLiteral())
                     } else {
-                        player.sendSystemMessage(Component.literal("你的消息当前会被广播。"))
+                        player.sendSystemMessage("modid.command.chatexchange.broadcastme.ison".toExchangeServerTranslatedLiteral())
                     }
 
                     1
@@ -184,14 +186,9 @@ object NeoForgeEvents {
             ).executes { context ->
                 val player = context.source.player ?: return@executes 0
 
-                val help = """
-                    ${ChatFormatting.DARK_AQUA}${ChatFormatting.BOLD}ChatExchange 帮助${ChatFormatting.RESET}
-                    若服务器开启了广播消息，你的消息默认会被自动广播到外部端口。
-                    你可以使用 /chatexchange broadcastme 来控制你的消息是否被广播。
-                    同时，在发送消息前加上@广播/@broadcast也可以广播你的消息。
-                """.trimIndent()
-
-                player.sendSystemMessage(Component.literal(help))
+                player.sendSystemMessage(
+                    "modid.command.chatexchange.description".toExchangeServerTranslatedLiteral()
+                )
                 1
             }
 
