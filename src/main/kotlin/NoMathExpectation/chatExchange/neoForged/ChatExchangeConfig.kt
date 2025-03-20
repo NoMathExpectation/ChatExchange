@@ -34,7 +34,7 @@ object ChatExchangeConfig {
         .worldRestart()
         .define("language", "")
 
-    val mixinMode = builder.comment("Whether to use mixin instead of event to listen to server chats.", "If the exchange server isn't sending server chat, try turn this on.")
+    val mixinMode: ModConfigSpec.BooleanValue = builder.comment("Whether to use mixin instead of event to listen to server chats.", "If the exchange server isn't sending server chat, try turn this on.")
         .translation("modid.config.mixinMode")
         .define("mixinMode", false)
 
