@@ -30,3 +30,5 @@ object ChatExchange {
         logger.log(Level.INFO, "Hello! This is working!")
     }
 }
+
+internal fun String.replaceModId() = replace("modid", ChatExchange.ID)

@@ -157,6 +157,24 @@ object NeoForgeEvents {
 
         val command = Commands.literal("chatexchange")
             .then(
+                Commands.literal("status").executes { context ->
+                    val player = context.source.player ?: return@executes 0
+
+                    fun Boolean.toProperLiteral() =
+                        (if (this) "chatexchange.const.enabled" else "chatexchange.const.disabled").toTranslatableComponent()
+
+                    player.sendSystemMessage(
+                        "chatexchange.command.chatexchange.status".toExchangeServerTranslatedLiteral(
+                            ChatExchangeConfig.chat.get().toProperLiteral(),
+                            ChatExchangeConfig.joinLeave.get().toProperLiteral(),
+                            ChatExchangeConfig.death.get().toProperLiteral(),
+                            ChatExchangeConfig.advancement.get().toProperLiteral()
+                        )
+                    )
+
+                    1
+                }
+            ).then(
                 Commands.literal("broadcastme").then(
                     Commands.argument("toggle", BoolArgumentType.bool()).executes { context ->
                         val player = context.source.player ?: return@executes 0
@@ -164,10 +182,10 @@ object NeoForgeEvents {
                         val toggle = BoolArgumentType.getBool(context, "toggle")
                         if (toggle) {
                             data.removeIgnoredPlayer(player.uuid)
-                            player.sendSystemMessage("modid.command.chatexchange.broadcastme.on".toExchangeServerTranslatedLiteral())
+                            player.sendSystemMessage("chatexchange.command.chatexchange.broadcastme.on".toExchangeServerTranslatedLiteral())
                         } else {
                             data.addIgnoredPlayer(player.uuid)
-                            player.sendSystemMessage("modid.command.chatexchange.broadcastme.off".toExchangeServerTranslatedLiteral())
+                            player.sendSystemMessage("chatexchange.command.chatexchange.broadcastme.off".toExchangeServerTranslatedLiteral())
                         }
 
                         1
@@ -176,9 +194,9 @@ object NeoForgeEvents {
                     val player = context.source.player ?: return@executes 0
                     val data = player.server.chatExchangeData
                     if (data.isIgnoredPlayer(player.uuid)) {
-                        player.sendSystemMessage("modid.command.chatexchange.broadcastme.isoff".toExchangeServerTranslatedLiteral())
+                        player.sendSystemMessage("chatexchange.command.chatexchange.broadcastme.isoff".toExchangeServerTranslatedLiteral())
                     } else {
-                        player.sendSystemMessage("modid.command.chatexchange.broadcastme.ison".toExchangeServerTranslatedLiteral())
+                        player.sendSystemMessage("chatexchange.command.chatexchange.broadcastme.ison".toExchangeServerTranslatedLiteral())
                     }
 
                     1
@@ -187,11 +205,10 @@ object NeoForgeEvents {
                 val player = context.source.player ?: return@executes 0
 
                 player.sendSystemMessage(
-                    "modid.command.chatexchange.description".toExchangeServerTranslatedLiteral()
+                    "chatexchange.command.chatexchange.description".toExchangeServerTranslatedLiteral()
                 )
                 1
             }
-
         dispatcher.register(command)
     }
 }
