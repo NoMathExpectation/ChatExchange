@@ -64,6 +64,10 @@ object ChatExchangeConfig {
         .translation("modid.config.advancement")
         .define("advancement", true)
 
+    val commandBroadcastFormat = builder.comment("The message format when player broadcast message using the command.")
+        .translation("modid.config.commandBroadcastFormat")
+        .define("commandBroadcastFormat", "\"<%s> %s\"")
+
     val spec = builder.build()
 
     private var registered = false

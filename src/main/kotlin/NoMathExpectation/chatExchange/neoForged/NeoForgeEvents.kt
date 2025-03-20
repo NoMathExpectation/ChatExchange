@@ -1,8 +1,12 @@
 package NoMathExpectation.chatExchange.neoForged
 
+import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.BoolArgumentType
+import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.commands.Commands
+import net.minecraft.commands.ParserUtils
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.ComponentSerialization
 import net.minecraft.network.chat.contents.PlainTextContents
 import net.minecraft.world.entity.player.Player
 import net.neoforged.bus.api.EventPriority
@@ -16,10 +20,13 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEven
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent
 import net.neoforged.neoforge.event.server.ServerStartedEvent
 import net.neoforged.neoforge.event.server.ServerStoppingEvent
+import org.apache.logging.log4j.LogManager
 import kotlin.jvm.optionals.getOrNull
 
 @EventBusSubscriber(modid = ChatExchange.ID)
 object NeoForgeEvents {
+    private val logger = LogManager.getLogger(ChatExchange.ID)
+
     @SubscribeEvent
     fun onServerStarted(event: ServerStartedEvent) {
         ExchangeServer.startNewInstance(event.server)
@@ -57,7 +64,7 @@ object NeoForgeEvents {
 
         ExchangeServer.sendEvent(
             MessageEvent(
-                event.username,
+                ExchangeServer.componentToString(event.player.name),
                 ExchangeServer.componentToString(message)
             )
         )
@@ -69,7 +76,7 @@ object NeoForgeEvents {
             return
         }
 
-        val name = event.entity.name.string
+        val name = ExchangeServer.componentToString(event.entity.name)
         if (ChatExchangeConfig.checkIgnoreBot(name)) {
             return
         }
@@ -85,7 +92,7 @@ object NeoForgeEvents {
             return
         }
 
-        val name = event.entity.name.string
+        val name = ExchangeServer.componentToString(event.entity.name)
         if (ChatExchangeConfig.checkIgnoreBot(name)) {
             return
         }
@@ -102,16 +109,15 @@ object NeoForgeEvents {
         }
 
         val player = event.entity as? Player ?: return
-        val name = player.name.string
+        val name = ExchangeServer.componentToString(player.name)
         if (ChatExchangeConfig.checkIgnoreBot(name)) {
             return
         }
 
         val cause = event.source
-        val playerName = ExchangeServer.componentToString(player.name)
         val text = ExchangeServer.componentToString(cause.getLocalizedDeathMessage(player))
         ExchangeServer.sendEvent(
-            PlayerDieEvent(playerName, text)
+            PlayerDieEvent(name, text)
         )
     }
 
@@ -122,7 +128,7 @@ object NeoForgeEvents {
         }
 
         val player = event.entity
-        val name = player.name.string
+        val name = ExchangeServer.componentToString(player.name)
         if (ChatExchangeConfig.checkIgnoreBot(name)) {
             return
         }
@@ -134,9 +140,8 @@ object NeoForgeEvents {
 
         val advancementName =
             advancement.display.getOrNull()?.title?.let { ExchangeServer.componentToString(it) } ?: return
-        val playerName = ExchangeServer.componentToString(player.name)
         ExchangeServer.sendEvent(
-            PlayerAdvancementEvent(playerName, advancementName)
+            PlayerAdvancementEvent(name, advancementName)
         )
     }
 
@@ -147,9 +152,43 @@ object NeoForgeEvents {
         }
 
         val dispatcher = event.dispatcher
+        val buildContext = event.buildContext
 
         val command = Commands.literal("chatexchange")
             .then(
+                Commands.literal("send").then(
+                    Commands.argument("message", StringArgumentType.greedyString()).executes { context ->
+                        val player = context.source.player ?: return@executes 0
+                        val message = StringArgumentType.getString(context, "message")
+
+                        val name = ExchangeServer.componentToString(player.name)
+
+                        val component = kotlin.runCatching {
+                            val formatted = ChatExchangeConfig.commandBroadcastFormat
+                                .get()
+                                .format(
+                                    name,
+                                    message,
+                                )
+                            ParserUtils.parseJson(buildContext, StringReader(formatted), ComponentSerialization.CODEC)
+                        }.getOrElse {
+                            logger.error("Unable to resolve component from command broadcast format.", it)
+                            player.sendSystemMessage("chatexchange.const.exception".toExchangeServerTranslatedLiteral())
+                            return@executes 0
+                        }
+
+                        logger.info(component.getStringWithLanguage(ExchangeServer.language))
+                        ExchangeServer.sendEvent(
+                            MessageEvent(name, message)
+                        )
+                        player.server.playerList.players.forEach {
+                            it.sendSystemMessage(component)
+                        }
+
+                        1
+                    }
+                )
+            ).then(
                 Commands.literal("status").executes { context ->
                     val player = context.source.player ?: return@executes 0
 
