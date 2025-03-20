@@ -40,6 +40,9 @@ public abstract class ServerGamePacketListenerImplMixin implements ServerGamePac
                 )
         );
 
+        if (!ChatExchangeConfig.INSTANCE.getChat().get() || data.isIgnoredPlayer(player.getUUID())) {
+            newString = ChatExchangeConfig.INSTANCE.getBroadcastPrefix().get() + newString;
+        }
         return new ServerboundChatPacket(newString, packet.timeStamp(), packet.salt(), packet.signature(), packet.lastSeenMessages());
     }
 }

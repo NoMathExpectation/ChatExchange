@@ -60,12 +60,16 @@ object NeoForgeEvents {
             message = newMessage
         }
 
-        event.message = message
+        event.message = if (!ChatExchangeConfig.chat.get() || data.isIgnoredPlayer(event.player.uuid)) {
+            Component.literal(ChatExchangeConfig.broadcastPrefix.get()).append(message)
+        } else {
+            message
+        }
 
         ExchangeServer.sendEvent(
             MessageEvent(
                 ExchangeServer.componentToString(event.player.name),
-                ExchangeServer.componentToString(message)
+                ExchangeServer.componentToString(message),
             )
         )
     }
