@@ -34,6 +34,10 @@ object ChatExchangeConfig {
         .worldRestart()
         .define("language", "")
 
+    val mixinMode = builder.comment("Whether to use mixin instead of event to listen to server chats.", "If the exchange server isn't sending server chat, try turn this on.")
+        .translation("modid.config.mixinMode")
+        .define("mixinMode", false)
+
     val ignoreBotRegex: ModConfigSpec.ConfigValue<String> = builder.comment("The regex to match and ignore the bot players.", "Leave blank to disable.")
         .translation("modid.config.ignoreBotRegex")
         .define("ignoreBotRegex", "") {

@@ -178,3 +178,15 @@ class ExchangeServer(
 
 fun String.toExchangeServerTranslatedLiteral(vararg args: Any?): Component =
     toTranslatedLiteral(*args, language = ExchangeServer.language)
+
+fun String.startsWithBroadcastPrefix(): Boolean = startsWith("@广播") || startsWith("@broadcast") || startsWith("@bc")
+
+fun String.removeBroadcastPrefix(): String = if (startsWith("@广播")) {
+    removePrefix("@广播")
+} else if (startsWith("@broadcast")) {
+    removePrefix("@broadcast")
+} else if (startsWith("@bc")) {
+    removePrefix("@bc")
+} else {
+    this
+}.trimStart()

@@ -6,6 +6,7 @@
   "modid.config.port": "端口",
   "modid.config.token": "令牌",
   "modid.config.language": "语言",
+  "modid.config.mixinMode": "Mixin 模式",
   "modid.config.ignoreBotRegex": "忽略机器人正则",
   "modid.config.chat": "启用聊天消息",
   "modid.config.joinLeave": "启用加入/离开消息",

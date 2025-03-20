@@ -32,28 +32,21 @@ object NeoForgeEvents {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     fun onServerChat(event: ServerChatEvent) {
+        if (ChatExchangeConfig.mixinMode.get()) {
+            return
+        }
+
         val data = event.player.server.chatExchangeData
         var message = event.message
         val string = ExchangeServer.componentToString(message)
-        if ((!ChatExchangeConfig.chat.get() || data.isIgnoredPlayer(event.player.uuid)) && !(string.startsWith("@广播") || string.startsWith(
-                "@broadcast"
-            ) || string.startsWith("@bc"))
-        ) {
+        if ((!ChatExchangeConfig.chat.get() || data.isIgnoredPlayer(event.player.uuid)) && !string.startsWithBroadcastPrefix()) {
             return
         }
 
         val contents = message.contents
         if (contents is PlainTextContents) {
             val text = contents.text()
-            val newText = if (text.startsWith("@广播")) {
-                text.removePrefix("@广播")
-            } else if (text.startsWith("@broadcast")) {
-                text.removePrefix("@broadcast")
-            } else if (text.startsWith("@bc")) {
-                text.removePrefix("@bc")
-            } else {
-                text
-            }.trimStart()
+            val newText = text.removeBroadcastPrefix()
             val newMessage = Component.literal(newText)
                 .setStyle(message.style)
             newMessage.siblings += message.siblings

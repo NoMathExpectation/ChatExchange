@@ -6,6 +6,7 @@
   "modid.config.port": "Port",
   "modid.config.token": "Token",
   "modid.config.language": "Language",
+  "modid.config.mixinMode": "Mixin Mode",
   "modid.config.ignoreBotRegex": "Ignore Bot Regex",
   "modid.config.chat": "Enable Chatting",
   "modid.config.joinLeave": "Enable Join/Leave",

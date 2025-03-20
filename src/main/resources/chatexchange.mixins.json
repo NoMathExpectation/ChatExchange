@@ -8,6 +8,9 @@
   ],
   "client": [
   ],
+  "server": [
+    "ServerGamePacketListenerImplMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }
