@@ -99,10 +99,18 @@ class ExchangeServer(
                     return@runCatching
                 }
 
-                val formatted = "<${event.from}> ${event.content}"
-                logger.info(formatted)
+                val formatted = kotlin.runCatching {
+                    ChatExchangeConfig.receiveMessageFormat
+                        .get()
+                        .format(event.from, event.content)
+                        .parseJsonToComponent()
+                }.getOrElse {
+                    logger.warn("Failed to format message from receive message format. Using default.", it)
+                    Component.literal("<${event.from}> ${event.content}")
+                }
+                logger.info(formatted.getStringWithLanguage(language))
                 minecraftServer.playerList.players.forEach {
-                    it.sendSystemMessage(Component.literal(formatted))
+                    it.sendSystemMessage(formatted)
                 }
             }.onFailure {
                 if (channel.isClosedForRead) {

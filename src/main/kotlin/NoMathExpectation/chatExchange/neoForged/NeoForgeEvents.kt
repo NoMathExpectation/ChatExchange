@@ -1,10 +1,12 @@
 package NoMathExpectation.chatExchange.neoForged
 
+import NoMathExpectation.chatExchange.neoForged.NeoForgeEvents.registries
 import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.commands.Commands
 import net.minecraft.commands.ParserUtils
+import net.minecraft.core.HolderLookup
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentSerialization
 import net.minecraft.network.chat.contents.PlainTextContents
@@ -149,14 +151,19 @@ object NeoForgeEvents {
         )
     }
 
+    internal lateinit var registries: HolderLookup.Provider
+        private set
+
     @SubscribeEvent
     fun onRegisterCommands(event: RegisterCommandsEvent) {
+        val buildContext = event.buildContext
+        registries = buildContext
+
         if (event.commandSelection != Commands.CommandSelection.DEDICATED) {
             return
         }
 
         val dispatcher = event.dispatcher
-        val buildContext = event.buildContext
 
         val command = Commands.literal("chatexchange")
             .then(
@@ -174,11 +181,11 @@ object NeoForgeEvents {
                                     name,
                                     message,
                                 )
-                            ParserUtils.parseJson(buildContext, StringReader(formatted), ComponentSerialization.CODEC)
+                            formatted.parseJsonToComponent()
                         }.getOrElse {
-                            logger.error("Unable to resolve component from command broadcast format.", it)
+                            logger.error("Unable to resolve component from command broadcast format. Using default.", it)
                             player.sendSystemMessage("chatexchange.const.exception".toExchangeServerTranslatedLiteral())
-                            return@executes 0
+                            Component.literal("<$name> $message")
                         }
 
                         logger.info(component.getStringWithLanguage(ExchangeServer.language))
@@ -247,4 +254,8 @@ object NeoForgeEvents {
             }
         dispatcher.register(command)
     }
+}
+
+fun String.parseJsonToComponent(): Component {
+    return ParserUtils.parseJson(registries, StringReader(this), ComponentSerialization.CODEC)
 }
