@@ -169,10 +169,9 @@ object NeoForgeEvents {
             .then(
                 Commands.literal("send").then(
                     Commands.argument("message", StringArgumentType.greedyString()).executes { context ->
-                        val player = context.source.player ?: return@executes 0
                         val message = StringArgumentType.getString(context, "message")
 
-                        val name = ExchangeServer.componentToString(player.name)
+                        val name = ExchangeServer.componentToString(context.source.displayName)
 
                         val component = kotlin.runCatching {
                             val formatted = ChatExchangeConfig.commandBroadcastFormat
@@ -184,7 +183,7 @@ object NeoForgeEvents {
                             formatted.parseJsonToComponent()
                         }.getOrElse {
                             logger.error("Unable to resolve component from command broadcast format. Using default.", it)
-                            player.sendSystemMessage("chatexchange.const.exception".toExchangeServerTranslatedLiteral())
+                            context.source.sendSystemMessage("chatexchange.const.exception".toExchangeServerTranslatedLiteral())
                             Component.literal("<$name> $message")
                         }
 
@@ -192,7 +191,7 @@ object NeoForgeEvents {
                         ExchangeServer.sendEvent(
                             MessageEvent(name, message)
                         )
-                        player.server.playerList.players.forEach {
+                        context.source.server.playerList.players.forEach {
                             it.sendSystemMessage(component)
                         }
 
@@ -201,12 +200,10 @@ object NeoForgeEvents {
                 )
             ).then(
                 Commands.literal("status").executes { context ->
-                    val player = context.source.player ?: return@executes 0
-
                     fun Boolean.toProperLiteral() =
                         (if (this) "chatexchange.const.enabled" else "chatexchange.const.disabled").toTranslatableComponent()
 
-                    player.sendSystemMessage(
+                    context.source.sendSystemMessage(
                         "chatexchange.command.chatexchange.status".toExchangeServerTranslatedLiteral(
                             ChatExchangeConfig.chat.get().toProperLiteral(),
                             ChatExchangeConfig.joinLeave.get().toProperLiteral(),
@@ -220,7 +217,11 @@ object NeoForgeEvents {
             ).then(
                 Commands.literal("broadcastme").then(
                     Commands.argument("toggle", BoolArgumentType.bool()).executes { context ->
-                        val player = context.source.player ?: return@executes 0
+                        val player = context.source.player ?: kotlin.run {
+                            context.source.sendSystemMessage("chatexchange.const.onlyPlayer".toExchangeServerTranslatedLiteral())
+                            return@executes 0
+                        }
+
                         val data = player.server.chatExchangeData
                         val toggle = BoolArgumentType.getBool(context, "toggle")
                         if (toggle) {
@@ -234,7 +235,11 @@ object NeoForgeEvents {
                         1
                     }
                 ).executes { context ->
-                    val player = context.source.player ?: return@executes 0
+                    val player = context.source.player ?: kotlin.run {
+                        context.source.sendSystemMessage("chatexchange.const.onlyPlayer".toExchangeServerTranslatedLiteral())
+                        return@executes 0
+                    }
+
                     val data = player.server.chatExchangeData
                     if (data.isIgnoredPlayer(player.uuid)) {
                         player.sendSystemMessage("chatexchange.command.chatexchange.broadcastme.isoff".toExchangeServerTranslatedLiteral())
@@ -245,10 +250,10 @@ object NeoForgeEvents {
                     1
                 }
             ).executes { context ->
-                val player = context.source.player ?: return@executes 0
-
-                player.sendSystemMessage(
-                    "chatexchange.command.chatexchange.description".toExchangeServerTranslatedLiteral()
+                context.source.sendSystemMessage(
+                    "chatexchange.command.chatexchange.description".toExchangeServerTranslatedLiteral(
+                        ChatExchangeConfig.broadcastTriggerPrefix.get().joinToString("/")
+                    )
                 )
                 1
             }
