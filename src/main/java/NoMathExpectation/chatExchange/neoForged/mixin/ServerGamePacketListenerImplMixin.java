@@ -28,11 +28,11 @@ public abstract class ServerGamePacketListenerImplMixin implements ServerGamePac
 
         var data = ChatExchangeDataKt.getChatExchangeData(player.server);
         var string = packet.message();
-        if ((!ChatExchangeConfig.INSTANCE.getChat().get() || data.isIgnoredPlayer(player.getUUID())) && !ExchangeServerKt.startsWithBroadcastPrefix(string)) {
+        if ((!ChatExchangeConfig.INSTANCE.getChat().get() || data.isIgnoredPlayer(player.getUUID())) && !ChatExchangeConfigKt.startsWithBroadcastPrefix(string)) {
             return packet;
         }
 
-        var newString = ExchangeServerKt.removeBroadcastPrefix(string);
+        var newString = ChatExchangeConfigKt.removeBroadcastPrefix(string);
         ExchangeServer.Companion.sendEvent(
                 new MessageEvent(
                         ExchangeServer.Companion.componentToString(player.getName()),

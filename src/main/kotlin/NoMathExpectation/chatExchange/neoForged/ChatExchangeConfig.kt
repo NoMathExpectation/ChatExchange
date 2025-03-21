@@ -64,7 +64,15 @@ object ChatExchangeConfig {
         .translation("modid.config.advancement")
         .define("advancement", true)
 
-    val broadcastPrefix: ModConfigSpec.ConfigValue<String> = builder.comment("The prefix to prepend when the chat message is being broadcast manually.")
+    val broadcastTriggerPrefix: ModConfigSpec.ConfigValue<MutableList<out String>> = builder.comment("The prefix to recognize to trigger broadcast in chat message.")
+        .translation("modid.config.broadcastTriggerPrefix")
+        .defineListAllowEmpty(
+            "broadcastTriggerPrefix",
+            { mutableListOf("@广播", "@bc", "@broadcast") },
+            { "@broadcast" },
+            { true }
+        )
+    val broadcastPrefix: ModConfigSpec.ConfigValue<String> = builder.comment("The prefix to prepend when displaying manually broadcast chat message.")
         .translation("modid.config.broadcastPrefix")
         .define("broadcastPrefix", "")
     val commandBroadcastFormat: ModConfigSpec.ConfigValue<String> = builder.comment("The message format when player broadcast message using the command.", "Will not prepend broadcast prefix.")
@@ -105,3 +113,19 @@ object ChatExchangeConfig {
         return regex.matches(name)
     }
 }
+
+fun String.startsWithBroadcastPrefix() =
+    ChatExchangeConfig.broadcastTriggerPrefix
+        .get()
+        .any { startsWith(it) }
+
+fun String.removeBroadcastPrefix() = run {
+    ChatExchangeConfig.broadcastTriggerPrefix
+        .get()
+        .forEach {
+            if (startsWith(it)) {
+                return@run removePrefix(it)
+            }
+        }
+    this
+}.trimStart()
