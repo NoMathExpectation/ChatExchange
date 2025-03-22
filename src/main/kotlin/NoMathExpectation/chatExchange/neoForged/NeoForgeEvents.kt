@@ -165,7 +165,7 @@ object NeoForgeEvents {
 
         val dispatcher = event.dispatcher
 
-        val command = Commands.literal("chatexchange")
+        val commandBuilder = Commands.literal("chatexchange")
             .then(
                 Commands.literal("send").then(
                     Commands.argument("message", StringArgumentType.greedyString()).executes { context ->
@@ -257,7 +257,10 @@ object NeoForgeEvents {
                 )
                 1
             }
-        dispatcher.register(command)
+        val command = dispatcher.register(commandBuilder)
+
+        val shortcutBuilder = Commands.literal("ce").redirect(command)
+        dispatcher.register(shortcutBuilder)
     }
 }
 
