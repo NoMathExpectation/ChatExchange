@@ -5,11 +5,11 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "chatexchange.refmap.json",
   "mixins": [
+    "ServerGamePacketListenerImplMixin"
   ],
   "client": [
   ],
   "server": [
-    "ServerGamePacketListenerImplMixin"
   ],
   "injectors": {
     "defaultRequire": 1
