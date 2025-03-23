@@ -1,5 +1,6 @@
 package NoMathExpectation.chatExchange.neoForged
 
+import NoMathExpectation.chatExchange.neoForged.chatImage.tryParseCICodeFileToData
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
@@ -122,11 +123,18 @@ class ExchangeServer(
     }
 
     suspend fun sendEvent(event: ExchangeEvent) {
-        logger.info("Sending event: $event")
+        var finalEvent = event
+        if (finalEvent is MessageEvent) {
+            finalEvent = finalEvent.copy(
+                content = finalEvent.content.tryParseCICodeFileToData()
+            )
+        }
+
+        logger.info("Sending event: $finalEvent")
         channelMutex.withLock {
             sendChannels.forEach {
                 kotlin.runCatching {
-                    it.writeExchangeEvent(event)
+                    it.writeExchangeEvent(finalEvent)
                 }.onFailure {
                     logger.error("Failed to send message to a client.", it)
                 }

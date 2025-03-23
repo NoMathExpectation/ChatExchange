@@ -22,6 +22,10 @@ repositories {
         url = uri("https://thedarkcolour.github.io/KotlinForForge/")
         content { includeGroup("thedarkcolour") }
     }
+    maven {
+        name = "kituinMavenReleases"
+        url = uri("https://maven.kituin.fun/releases")
+    }
 }
 
 base {
@@ -147,6 +151,10 @@ dependencies {
     externalImplementation("io.ktor:ktor-io", "[2.0, 4.0)", "2.3.13")
     externalImplementation("io.ktor:ktor-utils", "[2.0, 4.0)", "2.3.13")
     externalImplementation("io.ktor:ktor-network", "[2.0, 4.0)", "2.3.13")
+
+    // chatimage
+    compileOnly("io.github.kituin:ChatImageCode:0.12.1")
+    compileOnly("io.github.kituin:ChatImage:1.4.6+1.21.0+neoforge")
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
