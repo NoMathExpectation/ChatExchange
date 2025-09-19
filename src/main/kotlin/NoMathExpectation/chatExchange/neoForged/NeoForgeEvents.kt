@@ -1,31 +1,26 @@
 package NoMathExpectation.chatExchange.neoForged
 
-import NoMathExpectation.chatExchange.neoForged.NeoForgeEvents.registries
-import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
+import net.minecraft.ChatFormatting
 import net.minecraft.commands.Commands
-import net.minecraft.commands.ParserUtils
-import net.minecraft.core.HolderLookup
 import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.ComponentSerialization
-import net.minecraft.network.chat.contents.PlainTextContents
+import net.minecraft.network.chat.contents.LiteralContents
 import net.minecraft.world.entity.player.Player
-import net.neoforged.bus.api.EventPriority
-import net.neoforged.bus.api.SubscribeEvent
-import net.neoforged.fml.common.EventBusSubscriber
-import net.neoforged.neoforge.event.RegisterCommandsEvent
-import net.neoforged.neoforge.event.ServerChatEvent
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent
-import net.neoforged.neoforge.event.entity.player.AdvancementEvent.AdvancementEarnEvent
-import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent
-import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent
-import net.neoforged.neoforge.event.server.ServerStartedEvent
-import net.neoforged.neoforge.event.server.ServerStoppingEvent
+import net.minecraftforge.event.RegisterCommandsEvent
+import net.minecraftforge.event.ServerChatEvent
+import net.minecraftforge.event.entity.living.LivingDeathEvent
+import net.minecraftforge.event.entity.player.AdvancementEvent.AdvancementEarnEvent
+import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent
+import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent
+import net.minecraftforge.event.server.ServerStartedEvent
+import net.minecraftforge.event.server.ServerStoppingEvent
+import net.minecraftforge.eventbus.api.EventPriority
+import net.minecraftforge.eventbus.api.SubscribeEvent
+import net.minecraftforge.fml.common.Mod
 import org.apache.logging.log4j.LogManager
-import kotlin.jvm.optionals.getOrNull
 
-@EventBusSubscriber(modid = ChatExchange.ID)
+@Mod.EventBusSubscriber(modid = ChatExchange.ID)
 object NeoForgeEvents {
     private val logger = LogManager.getLogger(ChatExchange.ID)
 
@@ -53,7 +48,7 @@ object NeoForgeEvents {
         }
 
         val contents = message.contents
-        if (contents is PlainTextContents) {
+        if (contents is LiteralContents) {
             val text = contents.text()
             val newText = text.removeBroadcastPrefix()
             val newMessage = Component.literal(newText)
@@ -139,30 +134,20 @@ object NeoForgeEvents {
             return
         }
 
-        val advancement = event.advancement.value
-        if (advancement.display.getOrNull()?.shouldAnnounceChat() != true) {
+        val advancement = event.advancement
+        if (advancement.display?.shouldAnnounceChat() != true) {
             return
         }
 
         val advancementName =
-            advancement.display.getOrNull()?.title?.let { ExchangeServer.componentToString(it) } ?: return
+            advancement.display?.title?.let { ExchangeServer.componentToString(it) } ?: return
         ExchangeServer.sendEvent(
             PlayerAdvancementEvent(name, advancementName)
         )
     }
 
-    internal lateinit var registries: HolderLookup.Provider
-        private set
-
     @SubscribeEvent
     fun onRegisterCommands(event: RegisterCommandsEvent) {
-        val buildContext = event.buildContext
-        registries = buildContext
-
-        if (event.commandSelection != Commands.CommandSelection.DEDICATED) {
-            return
-        }
-
         val dispatcher = event.dispatcher
 
         val commandBuilder = Commands.literal("chatexchange")
@@ -182,7 +167,10 @@ object NeoForgeEvents {
                                 )
                             formatted.parseJsonToComponent()
                         }.getOrElse {
-                            logger.error("Unable to resolve component from command broadcast format. Using default.", it)
+                            logger.error(
+                                "Unable to resolve component from command broadcast format. Using default.",
+                                it
+                            )
                             context.source.sendSystemMessage("chatexchange.const.exception".toExchangeServerTranslatedLiteral())
                             Component.literal("<$name> $message")
                         }
@@ -265,5 +253,6 @@ object NeoForgeEvents {
 }
 
 fun String.parseJsonToComponent(): Component {
-    return ParserUtils.parseJson(registries, StringReader(this), ComponentSerialization.CODEC)
+    return Component.Serializer.fromJson(this)
+        ?: Component.literal("[error]").withStyle(ChatFormatting.RED)
 }

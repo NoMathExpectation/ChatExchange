@@ -1,6 +1,6 @@
 package NoMathExpectation.chatExchange.neoForged.chatImage
 
-import net.neoforged.fml.ModList
+import net.minecraftforge.fml.ModList
 
 internal val chatImageLoaded
     get() = ModList.get().isLoaded("chatimage")

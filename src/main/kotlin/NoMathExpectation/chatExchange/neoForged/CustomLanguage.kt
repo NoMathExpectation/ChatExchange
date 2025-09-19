@@ -11,13 +11,11 @@ import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.MultiPackResourceManager
 import net.minecraft.util.FormattedCharSequence
 import net.minecraft.util.StringDecomposer
-import net.neoforged.fml.i18n.I18nManager
 import org.apache.logging.log4j.LogManager
 import java.util.*
 
 class CustomLanguage(
     private val textMap: Map<String, String>,
-    private val componentMap: Map<String, Component>,
     private val defaultRightToLeft: Boolean = false,
 ) : Language() {
     override fun getOrDefault(key: String, defaultValue: String) = textMap.getOrDefault(key, defaultValue)
@@ -41,19 +39,16 @@ class CustomLanguage(
     }
 
     override fun getLanguageData() = textMap
-
-    override fun getComponent(key: String) = componentMap[key]
 }
 
 private val logger = LogManager.getLogger(ChatExchange.ID)
 
 fun languageOf(lang: String, server: MinecraftServer): Language {
     val textMap = mutableMapOf<String, String>()
-    val componentMap = mutableMapOf<String, Component>()
 
     fun loadFrom(path: String) {
         CustomLanguage::class.java.getResourceAsStream(path)?.use {
-            Language.loadFromJson(it, textMap::put, componentMap::put)
+            Language.loadFromJson(it, textMap::put)
         } ?: logger.warn("Unable to load language file $path")
     }
 
@@ -61,7 +56,8 @@ fun languageOf(lang: String, server: MinecraftServer): Language {
     loadFrom("/assets/chatexchange/fmllang/$lang.json") // fml
     loadFrom("/assets/chatexchange/neolang/$lang.json") // neoforge
 
-    textMap += I18nManager.loadTranslations(lang) // i18n
+    // I forgot what this is for
+    //textMap += I18nManager.loadTranslations(lang) // i18n
 
     // mods
     val langFile = String.format(Locale.ROOT, "lang/%s.json", lang)
@@ -69,10 +65,10 @@ fun languageOf(lang: String, server: MinecraftServer): Language {
     val clientResources = MultiPackResourceManager(PackType.CLIENT_RESOURCES, resourceManager.listPacks().toList())
     val loaded = clientResources.namespaces.map { namespace ->
         runCatching {
-            val langResource = ResourceLocation.fromNamespaceAndPath(namespace, langFile)
+            val langResource = ResourceLocation.tryBuild(namespace, langFile)!!
             clientResources.getResourceStack(langResource).forEach { resource ->
                 resource.open().use {
-                    Language.loadFromJson(it, textMap::put, componentMap::put)
+                    Language.loadFromJson(it, textMap::put)
                 }
             }
         }.onFailure {
@@ -83,7 +79,7 @@ fun languageOf(lang: String, server: MinecraftServer): Language {
     }.sum()
     logger.debug("Loaded {} mod language files for {}", loaded, lang)
 
-    return CustomLanguage(textMap, componentMap)
+    return CustomLanguage(textMap)
 }
 
 fun languageOfOrDefault(lang: String, server: MinecraftServer): Language = runCatching {

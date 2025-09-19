@@ -1,88 +1,107 @@
 package NoMathExpectation.chatExchange.neoForged
 
-import net.neoforged.api.distmarker.Dist
-import net.neoforged.bus.api.SubscribeEvent
-import net.neoforged.fml.common.EventBusSubscriber
-import net.neoforged.fml.config.ModConfig
-import net.neoforged.fml.event.config.ModConfigEvent
-import net.neoforged.neoforge.common.ModConfigSpec
-import thedarkcolour.kotlinforforge.neoforge.forge.LOADING_CONTEXT
-import thedarkcolour.kotlinforforge.neoforge.forge.runWhenOn
+import net.minecraftforge.api.distmarker.Dist
+import net.minecraftforge.common.ForgeConfigSpec
+import net.minecraftforge.eventbus.api.SubscribeEvent
+import net.minecraftforge.fml.common.Mod
+import net.minecraftforge.fml.config.ModConfig
+import net.minecraftforge.fml.event.config.ModConfigEvent
+import thedarkcolour.kotlinforforge.forge.LOADING_CONTEXT
+import thedarkcolour.kotlinforforge.forge.runWhenOn
 
-@EventBusSubscriber(
+@Mod.EventBusSubscriber(
     modid = ChatExchange.ID,
-    bus = EventBusSubscriber.Bus.MOD
+    bus = Mod.EventBusSubscriber.Bus.MOD
 )
 object ChatExchangeConfig {
-    private val builder = ModConfigSpec.Builder()
+    private val builder = ForgeConfigSpec.Builder()
 
-    val host: ModConfigSpec.ConfigValue<String> = builder.comment("The host to bind the exchange server to.")
+    val host: ForgeConfigSpec.ConfigValue<String> = builder.comment("The host to bind the exchange server to.")
         .translation("modid.config.host")
         .worldRestart()
         .define("host", "0.0.0.0")
-    val port: ModConfigSpec.IntValue = builder.comment("The port to bind the exchange server to.")
+    val port: ForgeConfigSpec.IntValue = builder.comment("The port to bind the exchange server to.")
         .translation("modid.config.port")
         .worldRestart()
         .defineInRange("port", 9002, 0, 65535)
-    val token: ModConfigSpec.ConfigValue<String> =
+    val token: ForgeConfigSpec.ConfigValue<String> =
         builder.comment("The token to authenticate with the exchange server.", "Leave blank to disable authentication.")
             .translation("modid.config.token")
             .worldRestart()
             .define("token", "")
-    val language: ModConfigSpec.ConfigValue<String> = builder.comment("The language the exchange server messages will be.", "Leave blank to use the language the game is using.")
+    val language: ForgeConfigSpec.ConfigValue<String> = builder.comment(
+        "The language the exchange server messages will be.",
+        "Leave blank to use the language the game is using."
+    )
         .translation("modid.config.language")
         .worldRestart()
         .define("language", "")
 
-    val mixinMode: ModConfigSpec.BooleanValue = builder.comment("Whether to use mixin instead of event to listen to server chats.", "If the exchange server isn't sending server chat, try turn this on.")
+    val mixinMode: ForgeConfigSpec.BooleanValue = builder.comment(
+        "Whether to use mixin instead of event to listen to server chats.",
+        "If the exchange server isn't sending server chat, try turn this on."
+    )
         .translation("modid.config.mixinMode")
         .define("mixinMode", false)
 
-    val ignoreBotRegex: ModConfigSpec.ConfigValue<String> = builder.comment("The regex to match and ignore the bot players.", "Leave blank to disable.")
-        .translation("modid.config.ignoreBotRegex")
-        .define("ignoreBotRegex", "") {
-            kotlin.runCatching {
-                val str = it as String
-                if (str.isBlank()) {
-                    return@runCatching true
-                }
+    val ignoreBotRegex: ForgeConfigSpec.ConfigValue<String> =
+        builder.comment("The regex to match and ignore the bot players.", "Leave blank to disable.")
+            .translation("modid.config.ignoreBotRegex")
+            .define("ignoreBotRegex", "") {
+                kotlin.runCatching {
+                    val str = it as String
+                    if (str.isBlank()) {
+                        return@runCatching true
+                    }
 
-                it.toRegex()
-                true
-            }.getOrDefault(false)
-        }
-    val chat: ModConfigSpec.BooleanValue = builder.comment("Whether to broadcast player chatting.", "Players can also broadcast their message by prefixing @broadcast.")
+                    it.toRegex()
+                    true
+                }.getOrDefault(false)
+            }
+    val chat: ForgeConfigSpec.BooleanValue = builder.comment(
+        "Whether to broadcast player chatting.",
+        "Players can also broadcast their message by prefixing @broadcast."
+    )
         .translation("modid.config.chat")
         .define("chat", true)
-    val joinLeave: ModConfigSpec.BooleanValue = builder.comment("Whether to broadcast player joining and leaving.")
+    val joinLeave: ForgeConfigSpec.BooleanValue = builder.comment("Whether to broadcast player joining and leaving.")
         .translation("modid.config.joinLeave")
         .define("joinLeave", true)
-    val death: ModConfigSpec.BooleanValue = builder.comment("Whether to broadcast player deaths.")
+    val death: ForgeConfigSpec.BooleanValue = builder.comment("Whether to broadcast player deaths.")
         .translation("modid.config.death")
         .define("death", true)
-    val advancement: ModConfigSpec.BooleanValue = builder.comment("Whether to broadcast player advancements.")
+    val advancement: ForgeConfigSpec.BooleanValue = builder.comment("Whether to broadcast player advancements.")
         .translation("modid.config.advancement")
         .define("advancement", true)
 
-    val broadcastTriggerPrefix: ModConfigSpec.ConfigValue<MutableList<out String>> = builder.comment("The prefix to recognize to trigger broadcast in chat message.")
-        .translation("modid.config.broadcastTriggerPrefix")
-        .defineListAllowEmpty(
-            "broadcastTriggerPrefix",
-            { mutableListOf("@广播", "@bc", "@broadcast") },
-            { "@broadcast" },
-            { true }
-        )
-    val broadcastPrefix: ModConfigSpec.ConfigValue<String> = builder.comment("The prefix to prepend when displaying manually broadcast chat message.")
-        .translation("modid.config.broadcastPrefix")
-        .define("broadcastPrefix", "")
-    val commandBroadcastFormat: ModConfigSpec.ConfigValue<String> = builder.comment("The message format when player broadcast message using the command.", "Will not prepend broadcast prefix.")
+    val broadcastTriggerPrefix: ForgeConfigSpec.ConfigValue<MutableList<out String>> =
+        builder.comment("The prefix to recognize to trigger broadcast in chat message.")
+            .translation("modid.config.broadcastTriggerPrefix")
+            .defineListAllowEmpty(
+                "broadcastTriggerPrefix",
+                { mutableListOf("@广播", "@bc", "@broadcast") },
+                { true }
+            )
+    val broadcastPrefix: ForgeConfigSpec.ConfigValue<String> =
+        builder.comment("The prefix to prepend when displaying manually broadcast chat message.")
+            .translation("modid.config.broadcastPrefix")
+            .define("broadcastPrefix", "")
+    val commandBroadcastFormat: ForgeConfigSpec.ConfigValue<String> = builder.comment(
+        "The message format when player broadcast message using the command.",
+        "Will not prepend broadcast prefix."
+    )
         .translation("modid.config.commandBroadcastFormat")
-        .define("commandBroadcastFormat", "\"<%s> %s\"")
-    val receiveMessageFormat: ModConfigSpec.ConfigValue<String> = builder.comment("The message format when receiving message from outside.")
-        .translation("modid.config.receiveMessageFormat")
-        .define("receiveMessageFormat", "\"<%s> %s\"")
+        .define("commandBroadcastFormat", "\"<%s> %s\"") {
+            (it as? String)?.parseJsonToComponent() != null
+        }
+    val receiveMessageFormat: ForgeConfigSpec.ConfigValue<String> =
+        builder.comment("The message format when receiving message from outside.")
+            .translation("modid.config.receiveMessageFormat")
+            .define("receiveMessageFormat", "\"<%s> %s\"") {
+                (it as? String)?.parseJsonToComponent() != null
+            }
 
-    val spec: ModConfigSpec = builder.build()
+    val spec: ForgeConfigSpec = builder.build()
 
     private var registered = false
     internal fun register() {
@@ -90,8 +109,7 @@ object ChatExchangeConfig {
             error("Config is already registered!")
         }
 
-        val modContainer = LOADING_CONTEXT.activeContainer
-        modContainer.registerConfig(ModConfig.Type.COMMON, spec)
+        LOADING_CONTEXT.registerConfig(ModConfig.Type.COMMON, spec)
         runWhenOn(Dist.CLIENT) {
             registerOnClient()
         }
