@@ -133,7 +133,7 @@ mixin {
 
 tasks.named<Jar>("jar") {
     manifest.attributes(
-        mapOf("MixinConfigs" to "${mod_id}.refmap.json")
+        mapOf("MixinConfigs" to "${mod_id}.mixins.json")
     )
 }
 
@@ -153,6 +153,7 @@ dependencies {
 
     // mixin
     annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+    //jarJar(implementation("io.github.llamalad7:mixinextras-neoforge:0.5.0")!!)
 
     // kff
     implementation("thedarkcolour:kotlinforforge:4.10.0")

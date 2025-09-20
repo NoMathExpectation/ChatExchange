@@ -103,8 +103,10 @@ class ExchangeServer(
                 val formatted = kotlin.runCatching {
                     ChatExchangeConfig.receiveMessageFormat
                         .get()
-                        .format(event.from, event.content)
+                        .format(event.from)
                         .parseJsonToComponent()
+                        .copy()
+                        .append(event.content)
                 }.getOrElse {
                     logger.warn("Failed to format message from receive message format. Using default.", it)
                     Component.literal("<${event.from}> ${event.content}")

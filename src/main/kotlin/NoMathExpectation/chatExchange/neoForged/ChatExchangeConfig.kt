@@ -83,22 +83,26 @@ object ChatExchangeConfig {
                 { true }
             )
     val broadcastPrefix: ForgeConfigSpec.ConfigValue<String> =
-        builder.comment("The prefix to prepend when displaying manually broadcast chat message.")
+        builder.comment("The prefix to prepend when player message is broadcast through player chat.")
             .translation("modid.config.broadcastPrefix")
             .define("broadcastPrefix", "")
     val commandBroadcastFormat: ForgeConfigSpec.ConfigValue<String> = builder.comment(
-        "The message format when player broadcast message using the command.",
+        "The message prefix format when player message is broadcast through system chat.",
         "Will not prepend broadcast prefix."
     )
         .translation("modid.config.commandBroadcastFormat")
-        .define("commandBroadcastFormat", "\"<%s> %s\"") {
-            (it as? String)?.parseJsonToComponent() != null
+        .define("commandBroadcastFormat", "\"<%s> \"") {
+            runCatching {
+                (it as? String)?.parseJsonToComponent()
+            }.getOrNull() != null
         }
     val receiveMessageFormat: ForgeConfigSpec.ConfigValue<String> =
         builder.comment("The message format when receiving message from outside.")
             .translation("modid.config.receiveMessageFormat")
-            .define("receiveMessageFormat", "\"<%s> %s\"") {
-                (it as? String)?.parseJsonToComponent() != null
+            .define("receiveMessageFormat", "\"<%s> \"") {
+                runCatching {
+                    (it as? String)?.parseJsonToComponent()
+                }.getOrNull() != null
             }
 
     val spec: ForgeConfigSpec = builder.build()

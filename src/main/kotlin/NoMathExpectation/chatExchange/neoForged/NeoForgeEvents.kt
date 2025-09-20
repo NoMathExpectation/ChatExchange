@@ -2,7 +2,6 @@ package NoMathExpectation.chatExchange.neoForged
 
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
-import net.minecraft.ChatFormatting
 import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.contents.LiteralContents
@@ -159,13 +158,12 @@ object NeoForgeEvents {
                         val name = ExchangeServer.componentToString(context.source.displayName)
 
                         val component = kotlin.runCatching {
-                            val formatted = ChatExchangeConfig.commandBroadcastFormat
+                            ChatExchangeConfig.commandBroadcastFormat
                                 .get()
-                                .format(
-                                    name,
-                                    message,
-                                )
-                            formatted.parseJsonToComponent()
+                                .format(name)
+                                .parseJsonToComponent()
+                                .copy()
+                                .append(message)
                         }.getOrElse {
                             logger.error(
                                 "Unable to resolve component from command broadcast format. Using default.",
@@ -179,9 +177,7 @@ object NeoForgeEvents {
                         ExchangeServer.sendEvent(
                             MessageEvent(name, message)
                         )
-                        context.source.server.playerList.players.forEach {
-                            it.sendSystemMessage(component)
-                        }
+                        context.source.server.playerList.broadcastSystemMessage(component, false)
 
                         1
                     }
@@ -254,5 +250,5 @@ object NeoForgeEvents {
 
 fun String.parseJsonToComponent(): Component {
     return Component.Serializer.fromJson(this)
-        ?: Component.literal("[error]").withStyle(ChatFormatting.RED)
+        ?: error("Unable to parse json to component: $this")
 }
