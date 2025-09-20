@@ -96,6 +96,12 @@ class ExchangeServer(
             kotlin.runCatching {
                 val event = channel.readExchangeEvent()
                 logger.info("Received event: $event")
+
+                if (event is StatusPingEvent) {
+                    sendEvent(buildStatusEvent())
+                    return@runCatching
+                }
+
                 if (event !is MessageEvent) {
                     return@runCatching
                 }
@@ -145,6 +151,17 @@ class ExchangeServer(
     }
 
     fun componentToString(component: Component) = component.getStringWithLanguage(language)
+
+    private fun buildStatusEvent(): StatusEvent {
+        val players = minecraftServer.playerList
+        return StatusEvent(
+            version = minecraftServer.serverVersion,
+            brand = minecraftServer.serverModName,
+            playerNumber = players.playerCount,
+            maxPlayerNumber = players.maxPlayers,
+            playerNames = players.playerNamesArray.filterNotNull(),
+        )
+    }
 
     fun launch() {
         if (launched) {

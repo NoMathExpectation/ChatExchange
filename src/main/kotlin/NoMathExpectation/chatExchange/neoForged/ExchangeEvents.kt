@@ -64,3 +64,17 @@ data class PlayerAdvancementEvent(
     val name: String,
     val advancement: String,
 ) : ExchangeEvent
+
+@Serializable
+@SerialName("status_ping")
+data object StatusPingEvent : ExchangeEvent
+
+@Serializable
+@SerialName("status")
+data class StatusEvent(
+    val version: String,
+    val brand: String,
+    val playerNumber: Int,
+    val maxPlayerNumber: Int,
+    val playerNames: List<String>,
+) : ExchangeEvent
