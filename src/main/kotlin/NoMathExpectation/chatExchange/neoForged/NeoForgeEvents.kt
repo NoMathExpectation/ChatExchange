@@ -174,15 +174,17 @@ object NeoForgeEvents {
                         val name = ExchangeServer.componentToString(context.source.displayName)
 
                         val component = kotlin.runCatching {
-                            val formatted = ChatExchangeConfig.commandBroadcastFormat
+                            ChatExchangeConfig.commandBroadcastFormat
                                 .get()
-                                .format(
-                                    name,
-                                    message,
-                                )
-                            formatted.parseJsonToComponent()
+                                .format(name)
+                                .parseJsonToComponent()
+                                .copy()
+                                .append(message)
                         }.getOrElse {
-                            logger.error("Unable to resolve component from command broadcast format. Using default.", it)
+                            logger.error(
+                                "Unable to resolve component from command broadcast format. Using default.",
+                                it
+                            )
                             context.source.sendSystemMessage("chatexchange.const.exception".toExchangeServerTranslatedLiteral())
                             Component.literal("<$name> $message")
                         }
@@ -191,9 +193,7 @@ object NeoForgeEvents {
                         ExchangeServer.sendEvent(
                             MessageEvent(name, message)
                         )
-                        context.source.server.playerList.players.forEach {
-                            it.sendSystemMessage(component)
-                        }
+                        context.source.server.playerList.broadcastSystemMessage(component, false)
 
                         1
                     }
