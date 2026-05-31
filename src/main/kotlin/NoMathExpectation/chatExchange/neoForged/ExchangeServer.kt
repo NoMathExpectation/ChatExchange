@@ -3,6 +3,7 @@ package NoMathExpectation.chatExchange.neoForged
 import NoMathExpectation.chatExchange.neoForged.chatImage.tryParseCICodeFileToData
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
+import io.ktor.util.network.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -33,7 +34,6 @@ class ExchangeServer(
                 serverSocket.use {
                     while (isActive) {
                         val socket = serverSocket.accept()
-                        logger.info("New connection from ${socket.remoteAddress}")
                         scope.launch {
                             handleRoutine(socket)
                         }
@@ -54,8 +54,32 @@ class ExchangeServer(
     private val sendChannels: MutableList<ByteWriteChannel> = mutableListOf()
     private val channelMutex = Mutex()
 
+    private val maxSafeReadBytes = ChatExchangeConfig.maxSafeReadBytesPerEvent.get()
+    private val maxConnectionPerAddress = ChatExchangeConfig.maxConnectionsPerAddress.get()
+
+    private suspend fun ByteReadChannel.readExchangeEventSafe() = readExchangeEvent(maxSafeReadBytes)
+
+    private val clientConnectionCount = mutableMapOf<String, Int>()
+    private val clientConnectionMutex = Mutex()
+
     private suspend fun handleRoutine(socket: Socket) {
         socket.use {
+            val remoteAddress = socket.remoteAddress.toJavaAddress().address
+            val remoteAddressDisplay = socket.remoteAddress.toString().takeIf { it.isNotEmpty() } ?: "<unknown>"
+
+            if (remoteAddress.isNotEmpty()) {
+                clientConnectionMutex.withLock {
+                    val currentCount = clientConnectionCount.getOrDefault(remoteAddress, 0)
+                    if (currentCount >= maxConnectionPerAddress) {
+                        logger.info("Address $remoteAddressDisplay attempted to connect but has reached the max connection limit. Connection refused.")
+                        return@use
+                    }
+
+                    clientConnectionCount[remoteAddress] = currentCount + 1
+                }
+            }
+
+            logger.info("New connection from $remoteAddressDisplay .")
             kotlin.runCatching {
                 val sendChannel = socket.openWriteChannel(autoFlush = true)
                 kotlin.runCatching inner@{
@@ -63,7 +87,7 @@ class ExchangeServer(
 
                     if (token.isNotBlank()) {
                         sendChannel.writeExchangeEvent(AuthenticateEvent(required = true))
-                        val actualToken = (receiveChannel.readExchangeEvent() as? AuthenticateEvent)?.token
+                        val actualToken = (receiveChannel.readExchangeEventSafe() as? AuthenticateEvent)?.token
                         if (token != actualToken) {
                             sendChannel.writeExchangeEvent(AuthenticateEvent(success = false))
                             return@inner
@@ -78,6 +102,8 @@ class ExchangeServer(
                     }
 
                     receiveRoutine(receiveChannel)
+                }.onFailure {
+                    logger.info("Exception during handling connection from $remoteAddressDisplay :", it)
                 }
                 withContext(NonCancellable) {
                     channelMutex.withLock {
@@ -85,16 +111,25 @@ class ExchangeServer(
                     }
                 }
             }.onFailure {
-                logger.info("Exception during handling connection.", it)
+                logger.info("Exception during handling connection from $remoteAddressDisplay :", it)
             }
+
+            clientConnectionMutex.withLock {
+                val currentCount = clientConnectionCount.getOrDefault(remoteAddress, 0)
+                if (currentCount <= 1) {
+                    clientConnectionCount.remove(remoteAddress)
+                } else {
+                    clientConnectionCount[remoteAddress] = currentCount - 1
+                }
+            }
+            logger.info("A connection from $remoteAddressDisplay closed.")
         }
-        logger.info("A connection closed.")
     }
 
     private suspend fun receiveRoutine(channel: ByteReadChannel) {
         while (isActive) {
             kotlin.runCatching {
-                val event = channel.readExchangeEvent()
+                val event = channel.readExchangeEventSafe()
                 logger.info("Received event: $event")
 
                 if (event is StatusPingEvent) {
@@ -124,6 +159,9 @@ class ExchangeServer(
             }.onFailure {
                 if (channel.isClosedForRead) {
                     return
+                }
+                if (it is ExchangeDisconnectException) {
+                    throw it
                 }
                 logger.error("Failed to receive message from a client.", it)
             }

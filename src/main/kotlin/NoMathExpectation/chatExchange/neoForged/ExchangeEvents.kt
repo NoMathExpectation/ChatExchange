@@ -10,8 +10,13 @@ import kotlinx.serialization.json.Json
 @Serializable
 sealed interface ExchangeEvent
 
-suspend fun ByteReadChannel.readExchangeEvent(): ExchangeEvent {
+class ExchangeDisconnectException(message: String) : RuntimeException(message)
+
+suspend fun ByteReadChannel.readExchangeEvent(maxSafeReadBytes: Int = Int.MAX_VALUE): ExchangeEvent {
     val len = readInt()
+    if (len > maxSafeReadBytes) {
+        throw ExchangeDisconnectException("Maximum safe read bytes of $maxSafeReadBytes exceeded! Found $len bytes.")
+    }
     val text = readPacket(len).readBytes().decodeToString()
     val message = Json.decodeFromString<ExchangeEvent>(text)
     return message

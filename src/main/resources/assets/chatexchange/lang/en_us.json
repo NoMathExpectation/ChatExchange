@@ -8,6 +8,8 @@
   "modid.config.port": "Port",
   "modid.config.token": "Token",
   "modid.config.language": "Language",
+  "modid.config.maxSafeReadBytesPerEvent": "Max Safe Read Bytes Per Event",
+  "modid.config.maxConnectionsPerAddress": "Max Connections Per Address",
   "modid.config.mixinMode": "Mixin Mode",
   "modid.config.ignoreBotRegex": "Ignore Bot Regex",
   "modid.config.chat": "Enable Chatting",

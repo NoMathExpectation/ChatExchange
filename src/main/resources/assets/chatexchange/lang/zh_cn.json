@@ -8,6 +8,8 @@
   "modid.config.port": "端口",
   "modid.config.token": "令牌",
   "modid.config.language": "语言",
+  "modid.config.maxSafeReadBytesPerEvent": "接收事件最大字节数",
+  "modid.config.maxConnectionsPerAddress": "地址最大连接数",
   "modid.config.mixinMode": "Mixin 模式",
   "modid.config.ignoreBotRegex": "忽略机器人正则",
   "modid.config.chat": "启用聊天消息",
